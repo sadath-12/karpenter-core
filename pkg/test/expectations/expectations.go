@@ -162,7 +162,7 @@ func ExpectDeleted(ctx context.Context, c client.Client, objects ...client.Objec
 	GinkgoHelper()
 	for _, object := range objects {
 		if err := c.Delete(ctx, object, &client.DeleteOptions{GracePeriodSeconds: ptr.Int64(0)}); !errors.IsNotFound(err) {
-			Expect(1, err).To(BeNil())
+			Expect(err).To(BeNil())
 		}
 		ExpectNotFound(ctx, c, object)
 	}
@@ -223,7 +223,7 @@ func ExpectFinalizersRemovedFromList(ctx context.Context, c client.Client, objec
 	GinkgoHelper()
 	for _, list := range objectLists {
 		Expect(c.List(ctx, list)).To(Succeed())
-		Expect(1, meta.EachListItem(list, func(o runtime.Object) error {
+		Expect(meta.EachListItem(list, func(o runtime.Object) error {
 			obj := o.(client.Object)
 			stored := obj.DeepCopyObject().(client.Object)
 			obj.SetFinalizers([]string{})
@@ -490,7 +490,7 @@ func ExpectReconcileSucceeded(ctx context.Context, reconciler reconcile.Reconcil
 func ExpectReconcileFailed(ctx context.Context, reconciler reconcile.Reconciler, key client.ObjectKey) {
 	GinkgoHelper()
 	_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: key})
-	Expect(1, err).To(HaveOccurred())
+	Expect(err).To(HaveOccurred())
 }
 
 func ExpectStatusConditionExists(obj apis.ConditionsAccessor, t apis.ConditionType) apis.Condition {

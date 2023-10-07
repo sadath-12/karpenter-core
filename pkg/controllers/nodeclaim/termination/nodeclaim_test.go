@@ -67,7 +67,7 @@ var _ = Describe("NodeClaim", func() {
 		_, err := cloudProvider.Get(ctx, nodeClaim.Status.ProviderID)
 		Expect(err).ToNot(HaveOccurred())
 
-		node := test.NodeClaimLinkedNode(nodeClaim)
+		node := test.NodeClaimLinkedNode(nodeClaim) 
 		ExpectApplied(ctx, env.Client, node)
 
 		// Expect the node and the nodeClaim to both be gone
