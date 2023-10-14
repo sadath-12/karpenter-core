@@ -154,7 +154,7 @@ func (t *Topology) AddRequirements(podRequirements, nodeRequirements scheduling.
 		if podRequirements.Has(topology.Key) {
 			podDomains = podRequirements.Get(topology.Key)
 		}
-		fmt.Println("pod domains is ", podDomains) // what tg key its looking for
+		fmt.Println("pod domains is ", podDomains) // what tg key its looking for eg: tg.k8s.io/zone exists
 		nodeDomains := scheduling.NewRequirement(topology.Key, v1.NodeSelectorOpExists)
 		if nodeRequirements.Has(topology.Key) {
 			nodeDomains = nodeRequirements.Get(topology.Key)
@@ -168,7 +168,8 @@ func (t *Topology) AddRequirements(podRequirements, nodeRequirements scheduling.
 		}
 		requirements.Add(domains)
 	}
-	fmt.Println("soo tg requirements is ", requirements)
+	fmt.Println("soo tg requirements for pod ", p.Name, " is", requirements)
+	// soo tg requirements for pod  inflate-68b989f994-j9frx  is karpenter.sh/capacity-type In [spot], karpenter.sh/provisioner-name In [default], topology.kubernetes.io/zone In [us-east-1d]
 	return requirements, nil
 }
 

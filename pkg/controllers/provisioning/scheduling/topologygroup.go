@@ -68,7 +68,7 @@ type TopologyGroup struct {
 func NewTopologyGroup(topologyType TopologyType, topologyKey string, pod *v1.Pod, namespaces sets.Set[string], labelSelector *metav1.LabelSelector, maxSkew int32, minDomains *int32, domains sets.Set[string]) *TopologyGroup {
 	domainCounts := map[string]int32{}
 	for domain := range domains {
-		fmt.Println("domain under new tg ", domain, " for pod ", pod.Name)
+		fmt.Println("domain under new tg ", domain, " for pod ", pod.Name) // domain options available for this pod 
 		domainCounts[domain] = 0
 	}
 	// the nil *TopologyNodeFilter always passes which is what we need for affinity/anti-affinity
@@ -156,6 +156,8 @@ func (t *TopologyGroup) Hash() uint64 {
 	}, hashstructure.FormatV2, &hashstructure.HashOptions{SlicesAsSets: true}))
 }
 
+// if 
+
 // nextDomainTopologySpread returns a scheduling.Requirement that includes a node domain that a pod should be scheduled to.
 // If there are multiple eligible domains, we return any random domain that satisfies the `maxSkew` configuration.
 // If there are no eligible domains, we return a `DoesNotExist` requirement, implying that we could not satisfy the topologySpread requirement.
@@ -173,7 +175,7 @@ func (t *TopologyGroup) nextDomainTopologySpread(pod *v1.Pod, podDomains, nodeDo
 			// comment from kube-scheduler regarding the viable choices to schedule to based on skew is:
 			// 'existing matching num' + 'if self-match (1 or 0)' - 'global min matching num' <= 'maxSkew'
 			count := t.domains[domain]
-			fmt.Println("node domain ",domain," count is ",count) // available number of nodes for that tg domain key
+			fmt.Println("node domain ",domain," count is ",count) // available number of nodes for that tg domain key with its count
 
 			if selfSelecting {
 				count++
@@ -188,6 +190,8 @@ func (t *TopologyGroup) nextDomainTopologySpread(pod *v1.Pod, podDomains, nodeDo
 		// avoids an error message about 'zone in [""]', preferring 'zone in []'
 		return scheduling.NewRequirement(podDomains.Key, v1.NodeSelectorOpDoesNotExist)
 	}
+
+	// we want to schedule the pod on the node that has lowest number of pods
 
 	fmt.Println("nextDomainTopologySpread for pod ",pod.Name," is",minDomain," with count ",minCount) // the next node domain this pod to schedule on
 

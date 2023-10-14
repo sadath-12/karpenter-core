@@ -53,21 +53,27 @@ var _ = Describe("Topology", func() {
 		})
 	})
 
-	It("should ignore unknown topology keys", func() {
+	It("should  ignore nodeselector while selecting nodes if nodeAffinityPolicy set to ignore", func() {
 		ExpectApplied(ctx, env.Client, nodePool)
+		ignore := v1.NodeInclusionPolicyIgnore
 		pods := []*v1.Pod{
 			test.UnschedulablePod(
-				test.PodOptions{ObjectMeta: metav1.ObjectMeta{Labels: labels}, TopologySpreadConstraints: []v1.TopologySpreadConstraint{{
-					TopologyKey:       "unknown",
-					WhenUnsatisfiable: v1.DoNotSchedule,
-					LabelSelector:     &metav1.LabelSelector{MatchLabels: labels},
-					MaxSkew:           1,
-				}}},
+				test.PodOptions{ObjectMeta: metav1.ObjectMeta{Labels: labels},
+					NodeSelector: map[string]string{
+						"unknown": "unknown",
+					},
+					TopologySpreadConstraints: []v1.TopologySpreadConstraint{{
+						TopologyKey:        v1.LabelTopologyZone,
+						WhenUnsatisfiable:  v1.DoNotSchedule,
+						LabelSelector:      &metav1.LabelSelector{MatchLabels: labels},
+						NodeAffinityPolicy: &ignore,
+						MaxSkew:            1,
+					}}},
 			),
 			test.UnschedulablePod(),
 		}
 		ExpectProvisioned(ctx, env.Client, cluster, cloudProvider, prov, pods...)
-		ExpectNotScheduled(ctx, env.Client, pods[0])
+		ExpectScheduled(ctx, env.Client, pods[0])
 		ExpectScheduled(ctx, env.Client, pods[1])
 	})
 
@@ -482,6 +488,8 @@ var _ = Describe("Topology", func() {
 			)
 			ExpectSkew(ctx, env.Client, "default", &topology[0]).To(ConsistOf(1, 1))
 		})
+
+		
 		It("satisfied minDomains constraints (equal) should allow expected pod scheduling", func() {
 			if env.Version.Minor() < 24 {
 				Skip("MinDomains TopologySpreadConstraint is only available starting in K8s >= 1.24.x")
