@@ -68,6 +68,7 @@ type TopologyGroup struct {
 func NewTopologyGroup(topologyType TopologyType, topologyKey string, pod *v1.Pod, namespaces sets.Set[string], labelSelector *metav1.LabelSelector, maxSkew int32, minDomains *int32, domains sets.Set[string]) *TopologyGroup {
 	domainCounts := map[string]int32{}
 	for domain := range domains {
+		fmt.Println("domain under new tg ", domain, " for pod ", pod.Name)
 		domainCounts[domain] = 0
 	}
 	// the nil *TopologyNodeFilter always passes which is what we need for affinity/anti-affinity
@@ -161,6 +162,7 @@ func (t *TopologyGroup) Hash() uint64 {
 func (t *TopologyGroup) nextDomainTopologySpread(pod *v1.Pod, podDomains, nodeDomains *scheduling.Requirement) *scheduling.Requirement {
 	// min count is calculated across all domains
 	min := t.domainMinCount(podDomains)
+	fmt.Println("min count for poddomains ",podDomains," is",min)
 	selfSelecting := t.selects(pod)
 
 	minDomain := ""
@@ -171,6 +173,8 @@ func (t *TopologyGroup) nextDomainTopologySpread(pod *v1.Pod, podDomains, nodeDo
 			// comment from kube-scheduler regarding the viable choices to schedule to based on skew is:
 			// 'existing matching num' + 'if self-match (1 or 0)' - 'global min matching num' <= 'maxSkew'
 			count := t.domains[domain]
+			fmt.Println("node domain ",domain," count is ",count) // available number of nodes for that tg domain key
+
 			if selfSelecting {
 				count++
 			}
@@ -184,6 +188,9 @@ func (t *TopologyGroup) nextDomainTopologySpread(pod *v1.Pod, podDomains, nodeDo
 		// avoids an error message about 'zone in [""]', preferring 'zone in []'
 		return scheduling.NewRequirement(podDomains.Key, v1.NodeSelectorOpDoesNotExist)
 	}
+
+	fmt.Println("nextDomainTopologySpread for pod ",pod.Name," is",minDomain," with count ",minCount) // the next node domain this pod to schedule on
+
 	return scheduling.NewRequirement(podDomains.Key, v1.NodeSelectorOpIn, minDomain)
 }
 
@@ -207,6 +214,7 @@ func (t *TopologyGroup) domainMinCount(domains *scheduling.Requirement) int32 {
 	if t.minDomains != nil && numPodSupportedDomains < *t.minDomains {
 		min = 0
 	}
+
 	return min
 }
 

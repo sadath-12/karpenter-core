@@ -154,16 +154,21 @@ func (t *Topology) AddRequirements(podRequirements, nodeRequirements scheduling.
 		if podRequirements.Has(topology.Key) {
 			podDomains = podRequirements.Get(topology.Key)
 		}
+		fmt.Println("pod domains is ", podDomains) // what tg key its looking for
 		nodeDomains := scheduling.NewRequirement(topology.Key, v1.NodeSelectorOpExists)
 		if nodeRequirements.Has(topology.Key) {
 			nodeDomains = nodeRequirements.Get(topology.Key)
 		}
-		domains := topology.Get(p, podDomains, nodeDomains)
+		fmt.Println("node domains is ", nodeDomains)
+		domains := topology.Get(p, podDomains, nodeDomains) // what tg key and value its looking for
+
+		fmt.Println("domains getting from topo from pod and node domains ", domains)
 		if domains.Len() == 0 {
 			return nil, fmt.Errorf("unsatisfiable topology constraint for %s, key=%s (counts = %v, podDomains = %v, nodeDomains = %v)", topology.Type, topology.Key, topology.domains, podDomains, nodeDomains)
 		}
 		requirements.Add(domains)
 	}
+	fmt.Println("soo tg requirements is ", requirements)
 	return requirements, nil
 }
 
@@ -271,6 +276,8 @@ func (t *Topology) countDomains(ctx context.Context, tg *TopologyGroup) error {
 		if !tg.nodeFilter.Matches(node) {
 			continue
 		}
+
+		fmt.Println("domain ", domain, "recorded under countDomains( for pod ", p.Name)
 		tg.Record(domain)
 	}
 	return nil
