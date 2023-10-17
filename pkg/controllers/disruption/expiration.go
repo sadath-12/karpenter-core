@@ -45,13 +45,13 @@ type Expiration struct {
 	recorder    events.Recorder
 }
 
-func NewExpiration(clk clock.Clock, kubeClient client.Client, cluster *state.Cluster, provisioner *provisioning.Provisioner, recorder events.Recorder) *Expiration {
+func NewExpiration(ctx context.Context, clk clock.Clock, kubeClient client.Client, cluster *state.Cluster, provisioner *provisioning.Provisioner) *Expiration {
 	return &Expiration{
 		clock:       clk,
 		kubeClient:  kubeClient,
 		cluster:     cluster,
 		provisioner: provisioner,
-		recorder:    recorder,
+		recorder:    events.FromContext(ctx),
 	}
 }
 

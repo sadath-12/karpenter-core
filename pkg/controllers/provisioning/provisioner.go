@@ -84,8 +84,8 @@ type Provisioner struct {
 	cm             *pretty.ChangeMonitor
 }
 
-func NewProvisioner(kubeClient client.Client, coreV1Client corev1.CoreV1Interface,
-	recorder events.Recorder, cloudProvider cloudprovider.CloudProvider, cluster *state.Cluster) *Provisioner {
+func NewProvisioner(ctx context.Context, kubeClient client.Client, coreV1Client corev1.CoreV1Interface,
+	cloudProvider cloudprovider.CloudProvider, cluster *state.Cluster) *Provisioner {
 	p := &Provisioner{
 		batcher:        NewBatcher(),
 		cloudProvider:  cloudProvider,
@@ -93,7 +93,7 @@ func NewProvisioner(kubeClient client.Client, coreV1Client corev1.CoreV1Interfac
 		coreV1Client:   coreV1Client,
 		volumeTopology: scheduler.NewVolumeTopology(kubeClient),
 		cluster:        cluster,
-		recorder:       recorder,
+		recorder:       events.FromContext(ctx),
 		cm:             pretty.NewChangeMonitor(),
 	}
 	return p

@@ -170,9 +170,9 @@ type MachineController struct {
 	*Controller
 }
 
-func NewMachineController(clk clock.Clock, kubeClient client.Client, cloudProvider cloudprovider.CloudProvider, recorder events.Recorder) corecontroller.Controller {
+func NewMachineController(ctx context.Context,clk clock.Clock, kubeClient client.Client, cloudProvider cloudprovider.CloudProvider) corecontroller.Controller {
 	return corecontroller.Typed[*v1alpha5.Machine](kubeClient, &MachineController{
-		Controller: NewController(clk, kubeClient, cloudProvider, recorder),
+		Controller: NewController(clk, kubeClient, cloudProvider, events.FromContext(ctx)),
 	})
 }
 

@@ -15,6 +15,8 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +39,6 @@ import (
 	"github.com/aws/karpenter-core/pkg/controllers/provisioning"
 	"github.com/aws/karpenter-core/pkg/controllers/state"
 	"github.com/aws/karpenter-core/pkg/controllers/state/informer"
-	"github.com/aws/karpenter-core/pkg/events"
 	"github.com/aws/karpenter-core/pkg/operator/controller"
 )
 
@@ -46,30 +47,30 @@ func NewControllers(
 	kubeClient client.Client,
 	kubernetesInterface kubernetes.Interface,
 	cluster *state.Cluster,
-	recorder events.Recorder,
 	cloudProvider cloudprovider.CloudProvider,
+	ctx context.Context,
 ) []controller.Controller {
 
-	p := provisioning.NewProvisioner(kubeClient, kubernetesInterface.CoreV1(), recorder, cloudProvider, cluster)
-	evictionQueue := terminator.NewQueue(kubernetesInterface.CoreV1(), recorder)
+	p := provisioning.NewProvisioner(ctx, kubeClient, kubernetesInterface.CoreV1(), cloudProvider, cluster)
+	evictionQueue := terminator.NewQueue(ctx, kubernetesInterface.CoreV1())
 
 	return []controller.Controller{
 		p, evictionQueue,
-		disruption.NewController(clock, kubeClient, p, cloudProvider, recorder, cluster),
-		provisioning.NewController(kubeClient, p, recorder),
+		disruption.NewController(ctx, clock, kubeClient, p, cloudProvider, cluster),
+		provisioning.NewController(ctx, kubeClient, p),
 		nodepoolhash.NewProvisionerController(kubeClient),
 		informer.NewDaemonSetController(kubeClient, cluster),
 		informer.NewNodeController(kubeClient, cluster),
 		informer.NewPodController(kubeClient, cluster),
 		informer.NewProvisionerController(kubeClient, cluster),
 		informer.NewMachineController(kubeClient, cluster),
-		termination.NewController(kubeClient, cloudProvider, terminator.NewTerminator(clock, kubeClient, evictionQueue), recorder),
+		termination.NewController(ctx, kubeClient, cloudProvider, terminator.NewTerminator(clock, kubeClient, evictionQueue)),
 		metricspod.NewController(kubeClient),
 		metricsprovisioner.NewController(kubeClient),
 		metricsnode.NewController(cluster),
 		nodepoolcounter.NewProvisionerController(kubeClient, cluster),
-		nodeclaimconsistency.NewMachineController(clock, kubeClient, recorder, cloudProvider),
-		nodeclaimlifecycle.NewMachineController(clock, kubeClient, cloudProvider, recorder),
+		nodeclaimconsistency.NewMachineController(ctx, clock, kubeClient, cloudProvider),
+		nodeclaimlifecycle.NewMachineController(ctx, clock, kubeClient, cloudProvider),
 		nodeclaimgarbagecollection.NewController(clock, kubeClient, cloudProvider),
 		nodeclaimtermination.NewMachineController(kubeClient, cloudProvider),
 		nodeclaimdisruption.NewMachineController(clock, kubeClient, cluster, cloudProvider),

@@ -68,12 +68,12 @@ type Queue struct {
 	recorder     events.Recorder
 }
 
-func NewQueue(coreV1Client corev1.CoreV1Interface, recorder events.Recorder) *Queue {
+func NewQueue(ctx context.Context, coreV1Client corev1.CoreV1Interface) *Queue {
 	queue := &Queue{
 		RateLimitingInterface: workqueue.NewRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(evictionQueueBaseDelay, evictionQueueMaxDelay)),
 		Set:                   set.NewSet(),
 		coreV1Client:          coreV1Client,
-		recorder:              recorder,
+		recorder:              events.FromContext(ctx),
 	}
 	return queue
 }

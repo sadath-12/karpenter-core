@@ -40,9 +40,9 @@ type MultiNodeConsolidation struct {
 	consolidation
 }
 
-func NewMultiNodeConsolidation(clk clock.Clock, cluster *state.Cluster, kubeClient client.Client,
-	provisioner *provisioning.Provisioner, cp cloudprovider.CloudProvider, recorder events.Recorder) *MultiNodeConsolidation {
-	return &MultiNodeConsolidation{makeConsolidation(clk, cluster, kubeClient, provisioner, cp, recorder)}
+func NewMultiNodeConsolidation(ctx context.Context, clk clock.Clock, cluster *state.Cluster, kubeClient client.Client,
+	provisioner *provisioning.Provisioner, cp cloudprovider.CloudProvider) *MultiNodeConsolidation {
+	return &MultiNodeConsolidation{makeConsolidation(clk, cluster, kubeClient, provisioner, cp, events.FromContext(ctx))}
 }
 
 func (m *MultiNodeConsolidation) ComputeCommand(ctx context.Context, candidates ...*Candidate) (Command, error) {

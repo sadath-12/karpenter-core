@@ -35,7 +35,7 @@ type Terminator struct {
 	evictionQueue *Queue
 }
 
-func NewTerminator(clk clock.Clock, kubeClient client.Client, eq *Queue) *Terminator {
+func NewTerminator(  clk clock.Clock, kubeClient client.Client, eq *Queue) *Terminator {
 	return &Terminator{
 		clock:         clk,
 		kubeClient:    kubeClient,

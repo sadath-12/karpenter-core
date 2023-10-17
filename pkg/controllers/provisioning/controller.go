@@ -40,11 +40,11 @@ type Controller struct {
 }
 
 // NewController constructs a controller instance
-func NewController(kubeClient client.Client, provisioner *Provisioner, recorder events.Recorder) corecontroller.Controller {
+func NewController(ctx context.Context, kubeClient client.Client, provisioner *Provisioner) corecontroller.Controller {
 	return corecontroller.Typed[*v1.Pod](kubeClient, &Controller{
 		kubeClient:  kubeClient,
 		provisioner: provisioner,
-		recorder:    recorder,
+		recorder:    events.FromContext(ctx),
 	})
 }
 

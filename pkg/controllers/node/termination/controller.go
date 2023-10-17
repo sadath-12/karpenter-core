@@ -54,12 +54,12 @@ type Controller struct {
 }
 
 // NewController constructs a controller instance
-func NewController(kubeClient client.Client, cloudProvider cloudprovider.CloudProvider, terminator *terminator.Terminator, recorder events.Recorder) corecontroller.Controller {
+func NewController(ctx context.Context,kubeClient client.Client, cloudProvider cloudprovider.CloudProvider, terminator *terminator.Terminator) corecontroller.Controller {
 	return corecontroller.Typed[*v1.Node](kubeClient, &Controller{
 		kubeClient:    kubeClient,
 		cloudProvider: cloudProvider,
 		terminator:    terminator,
-		recorder:      recorder,
+		recorder:      events.FromContext(ctx),
 	})
 }
 

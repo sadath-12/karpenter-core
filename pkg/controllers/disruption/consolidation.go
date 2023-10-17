@@ -56,7 +56,7 @@ func makeConsolidation(clock clock.Clock, cluster *state.Cluster, kubeClient cli
 	return consolidation{
 		clock:         clock,
 		cluster:       cluster,
-		kubeClient:    kubeClient,
+		kubeClient:    kubeClient, 
 		provisioner:   provisioner,
 		cloudProvider: cloudProvider,
 		recorder:      recorder,

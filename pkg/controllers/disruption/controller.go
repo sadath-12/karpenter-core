@@ -74,30 +74,30 @@ func waitRetryOptions(ctx context.Context) []retry.Option {
 	}
 }
 
-func NewController(clk clock.Clock, kubeClient client.Client, provisioner *provisioning.Provisioner,
-	cp cloudprovider.CloudProvider, recorder events.Recorder, cluster *state.Cluster) *Controller {
+func NewController(ctx context.Context, clk clock.Clock, kubeClient client.Client, provisioner *provisioning.Provisioner,
+	cp cloudprovider.CloudProvider, cluster *state.Cluster) *Controller {
 
 	return &Controller{
 		clock:         clk,
 		kubeClient:    kubeClient,
 		cluster:       cluster,
 		provisioner:   provisioner,
-		recorder:      recorder,
+		recorder:      events.FromContext(ctx),
 		cloudProvider: cp,
 		lastRun:       map[string]time.Time{},
 		methods: []Method{
 			// Expire any NodeClaims that must be deleted, allowing their pods to potentially land on currently
-			NewExpiration(clk, kubeClient, cluster, provisioner, recorder),
+			NewExpiration(ctx,clk, kubeClient, cluster, provisioner),
 			// Terminate any NodeClaims that have drifted from provisioning specifications, allowing the pods to reschedule.
-			NewDrift(kubeClient, cluster, provisioner, recorder),
+			NewDrift(ctx,kubeClient, cluster, provisioner),
 			// Delete any remaining empty NodeClaims as there is zero cost in terms of disruption.  Emptiness and
 			// emptyNodeConsolidation are mutually exclusive, only one of these will operate
 			NewEmptiness(clk),
-			NewEmptyNodeConsolidation(clk, cluster, kubeClient, provisioner, cp, recorder),
+			NewEmptyNodeConsolidation(ctx,clk, cluster, kubeClient, provisioner, cp),
 			// Attempt to identify multiple NodeClaims that we can consolidate simultaneously to reduce pod churn
-			NewMultiNodeConsolidation(clk, cluster, kubeClient, provisioner, cp, recorder),
+			NewMultiNodeConsolidation(ctx,clk, cluster, kubeClient, provisioner, cp),
 			// And finally fall back our single NodeClaim consolidation to further reduce cluster cost.
-			NewSingleNodeConsolidation(clk, cluster, kubeClient, provisioner, cp, recorder),
+			NewSingleNodeConsolidation(ctx,clk, cluster, kubeClient, provisioner, cp),
 		},
 	}
 }
