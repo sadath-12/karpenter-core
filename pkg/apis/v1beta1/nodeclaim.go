@@ -181,3 +181,4 @@ type NodeClaimList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []NodeClaim `json:"items"`
 }
+ 

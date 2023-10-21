@@ -172,6 +172,8 @@ func (c *consolidation) computeConsolidation(ctx context.Context, candidates ...
 		return Command{}, nil
 	}
 
+	fmt.Println("nodeclaim reqs from consolidation is",results.NewNodeClaims[0].Requirements)
+
 	// We are consolidating a node from OD -> [OD,Spot] but have filtered the instance types by cost based on the
 	// assumption, that the spot variant will launch. We also need to add a requirement to the node to ensure that if
 	// spot capacity is insufficient we don't replace the node with a more expensive on-demand node.  Instead the launch

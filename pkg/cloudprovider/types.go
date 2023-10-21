@@ -99,6 +99,9 @@ type InstanceType struct {
 // precompute is used to ensure we only compute the allocatable resources onces as its called many times
 // and the operation is fairly expensive.
 func (i *InstanceType) precompute() {
+	fmt.Println("capacity for instance ", i.Name, " is", i.Capacity)
+	fmt.Println("overhead ", i.Name, " is", i.Overhead.Total())
+
 	i.allocatable = resources.Subtract(i.Capacity, i.Overhead.Total())
 }
 

@@ -180,6 +180,10 @@ func (s *Scheduler) Solve(ctx context.Context, pods []*v1.Pod) *Results {
 			delete(errors, k)
 		}
 	}
+
+	fmt.Println("new nodeclaims length is",len(s.newNodeClaims))
+	fmt.Println("existing node length is",len(s.existingNodes))
+
 	return &Results{
 		NewNodeClaims: s.newNodeClaims,
 		ExistingNodes: s.existingNodes,
@@ -234,10 +238,12 @@ func (s *Scheduler) recordSchedulingResults(ctx context.Context, pods []*v1.Pod,
 	logging.FromContext(ctx).Infof("computed %d unready node(s) will fit %d pod(s)", inflightCount, existingCount)
 }
 
+// if existing nodes are compatible it will schedule in there or else it will move to new node
 func (s *Scheduler) add(ctx context.Context, pod *v1.Pod) error {
 	// first try to schedule against an in-flight real node
 	for _, node := range s.existingNodes {
 		if err := node.Add(ctx, s.kubeClient, pod); err == nil {
+			fmt.Println("existing node", node.Name(), "choosen for scheduling")
 			return nil
 		}
 	}
@@ -248,6 +254,7 @@ func (s *Scheduler) add(ctx context.Context, pod *v1.Pod) error {
 	// Pick existing node that we are about to create
 	for _, nodeClaim := range s.newNodeClaims {
 		if err := nodeClaim.Add(pod); err == nil {
+			fmt.Println("existing nodeclaim ", nodeClaim.Name, "choosen for scheduling")
 			return nil
 		}
 	}
@@ -277,6 +284,7 @@ func (s *Scheduler) add(ctx context.Context, pod *v1.Pod) error {
 			continue
 		}
 		// we will launch this nodeClaim and need to track its maximum possible resource usage against our remaining resources
+		fmt.Println("new nodeclaim choosen for scheduling")
 		s.newNodeClaims = append(s.newNodeClaims, nodeClaim)
 		s.remainingResources[nodeClaimTemplate.OwnerKey] = subtractMax(s.remainingResources[nodeClaimTemplate.OwnerKey], nodeClaim.InstanceTypeOptions)
 		return nil

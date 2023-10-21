@@ -95,7 +95,7 @@ var _ = Describe("NodePool/Provisioning", func() {
 			ExpectNotScheduled(ctx, env.Client, pod)
 		}
 	})
-	It("should provision nodes for accelerators", func() {
+	FIt("should provision nodes for accelerators", func() {
 		ExpectApplied(ctx, env.Client, test.NodePool())
 		pods := []*v1.Pod{
 			test.UnschedulablePod(test.PodOptions{

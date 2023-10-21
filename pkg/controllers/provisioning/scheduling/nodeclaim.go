@@ -74,7 +74,10 @@ func (n *NodeClaim) Add(pod *v1.Pod) error {
 	}
 
 	nodeClaimRequirements := scheduling.NewRequirements(n.Requirements.Values()...)
+	fmt.Println("nodeclaim reqs", nodeClaimRequirements)
+	// nodeclaim reqs karpenter.sh/capacity-type In [on-demand spot], karpenter.sh/provisioner-name In [condorplump-1-wixhuhyj8t], testing/cluster In [unspecified]
 	podRequirements := scheduling.NewPodRequirements(pod)
+	fmt.Println("pod reqs", podRequirements)
 
 	// Check NodeClaim Affinity Requirements
 	if err := nodeClaimRequirements.Compatible(podRequirements, lo.Ternary(n.OwnerKey.IsProvisioner, scheduling.AllowUndefinedWellKnownLabelsV1Alpha5, scheduling.AllowUndefinedWellKnownLabelsV1Beta1)); err != nil {
@@ -90,6 +93,8 @@ func (n *NodeClaim) Add(pod *v1.Pod) error {
 	}
 	// Check Topology Requirements
 	topologyRequirements, err := n.topology.AddRequirements(strictPodRequirements, nodeClaimRequirements, pod, lo.Ternary(n.OwnerKey.IsProvisioner, scheduling.AllowUndefinedWellKnownLabelsV1Alpha5, scheduling.AllowUndefinedWellKnownLabelsV1Beta1))
+	fmt.Println("topology reqs", topologyRequirements)
+	// topology reqs karpenter.sh/capacity-type In [on-demand spot], karpenter.sh/provisioner-name In [spikeshore-1-3uouamznar], testing/cluster In [unspecified], topology.kubernetes.io/zone In [test-zone-2]
 	if err != nil {
 		return err
 	}
@@ -235,9 +240,37 @@ func filterInstanceTypesByRequirements(instanceTypes []*cloudprovider.InstanceTy
 	for _, it := range instanceTypes {
 		// the tradeoff to not short circuiting on the filtering is that we can report much better error messages
 		// about why scheduling failed
+		fmt.Println("instance typ", it.Name)
+		// 		instance typ default-instance-type
+		// instance typ small-instance-type
+		// instance typ gpu-vendor-instance-type
+		// instance typ gpu-vendor-b-instance-type
+		// instance typ arm-instance-type
+		// instance typ single-pod-instance-type
+		fmt.Println("the reqs to satisfy", requirements)
+		// Eg:
+		// the reqs to satisfy karpenter.sh/capacity-type In [on-demand spot], karpenter.sh/provisioner-name In [foxblue-1-xydlh2pgan], testing/cluster In [unspecified], topology.kubernetes.io/zone In [test-zone-3]
+		// the reqs the it has  &{single-pod-instance-type integer In [4], karpenter.sh/capacity-type In [on-demand spot], kubernetes.io/arch In [amd64], kubernetes.io/os In [darwin linux windows], node.kubernetes.io/instance-type In [single-pod-instance-type], size In [small], special DoesNotExist, topology.kubernetes.io/zone In [test-zone-1 test-zone-2 test-zone-3] [{spot test-zone-1 0.8294967296 true} {spot test-zone-2 0.8294967296 true} {on-demand test-zone-1 0.8294967296 true} {on-demand test-zone-2 0.8294967296 true} {on-demand test-zone-3 0.8294967296 true}] map[cpu:{{4 0} {<nil>} 4 DecimalSI} memory:{{4294967296 0} {<nil>} 4Gi BinarySI} pods:{{1 0} {<nil>} 1 DecimalSI}] 0xc00049c750 {1 {0 0}} map[cpu:{{3900 -3} {<nil>}  DecimalSI} memory:{{4284481536 0} {<nil>}  BinarySI} pods:{{1 0} {<nil>} 1 DecimalSI}]}
+		fmt.Println("the reqs the instance type has ", it)
+		// checks if reqs match
 		itCompat := compatible(it, requirements)
+
+		// capacity for instance  arm-instance-type  is map[cpu:{{16 0} {<nil>} 16 DecimalSI} memory:{{137438953472 0} {<nil>}  BinarySI} pods:{{5 0} {<nil>} 5 DecimalSI}]
+		// overhead  arm-instance-type  is map[cpu:{{100 -3} {<nil>}  DecimalSI} memory:{{10485760 0} {<nil>}  BinarySI}]
+		fmt.Println("it allocatable is", it.Allocatable())
+		// it allocatable is map[cpu:{{15900 -3} {<nil>}  DecimalSI} memory:{{137428467712 0} {<nil>}  BinarySI} pods:{{5 0} {<nil>} 5 DecimalSI}] -- for  arm-instance-type
+
+		// checks if it resource quantities are always greater than requests quanitites
+
 		itFits := fits(it, requests)
+
+		// here we check if that zone and capacity match
 		itHasOffering := hasOffering(it, requirements)
+
+		fmt.Println("instance ", it.Name, " offerings available is", it.Offerings)
+
+		// instance  arm-instance-type  offerings available is [{spot test-zone-1 15.3438953472 true} {spot test-zone-2 15.3438953472 true} {on-demand test-zone-1 15.3438953472 true} {on-demand test-zone-2 15.3438953472 true} {on-demand test-zone-3 15.3438953472 true}]
+		// where [spot] [test-zone-1] [15.3438953472] [true] ---> [type] [zone of that it] [price of that it] [if that it is available]
 
 		// track if any single instance type met a single criteria
 		results.requirementsMet = results.requirementsMet || itCompat
@@ -273,5 +306,6 @@ func hasOffering(instanceType *cloudprovider.InstanceType, requirements scheduli
 			return true
 		}
 	}
+
 	return false
 }

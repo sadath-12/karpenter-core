@@ -257,6 +257,7 @@ func (r Requirements) Intersects(requirements Requirements) (errs error) {
 				if operator := existing.Operator(); operator == v1.NodeSelectorOpNotIn || operator == v1.NodeSelectorOpDoesNotExist {
 					continue
 				}
+				// continue
 			}
 			errs = multierr.Append(errs, fmt.Errorf("key %s, %s not in %s", key, incoming, existing))
 		}

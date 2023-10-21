@@ -13,7 +13,7 @@ limitations under the License.
 */
 
 package nodepool_test
-
+ 
 import (
 	"context"
 	"encoding/json"
@@ -44,7 +44,7 @@ import (
 
 var ctx context.Context
 var env *test.Environment
-
+ 
 func TestAPIs(t *testing.T) {
 	ctx = TestContextWithLogger(t)
 	RegisterFailHandler(Fail)

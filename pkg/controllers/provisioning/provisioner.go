@@ -247,7 +247,11 @@ func (p *Provisioner) NewScheduler(ctx context.Context, pods []*v1.Pod, stateNod
 			// ensures that something like zones from an instance type don't expand the universe of valid domains.
 			requirements := scheduling.NewNodeSelectorRequirements(nodePool.Spec.Template.Spec.Requirements...)
 			requirements.Add(scheduling.NewLabelRequirements(nodePool.Spec.Template.Labels).Values()...)
+			// reqs from provisoners nodepool testing/cluster In [unspecified]
+			fmt.Println("reqs from provisoners nodepool", requirements)
 			requirements.Add(instanceType.Requirements.Values()...)
+			// reqs from provisoners nodepool added instanceType integer In [4], karpenter.sh/capacity-type In [on-demand spot], kubernetes.io/arch In [amd64], kubernetes.io/os In [darwin linux windows], node.kubernetes.io/instance-type In [gpu-vendor-instance-type], size In [small], special DoesNotExist, testing/cluster In [unspecified], topology.kubernetes.io/zone In [test-zone-1 test-zone-2 test-zone-3]
+			fmt.Println("reqs from provisoners nodepool added instanceType", requirements)
 
 			for key, requirement := range requirements {
 				// This code used to execute a Union between domains[key] and requirement.Values().
@@ -260,6 +264,7 @@ func (p *Provisioner) NewScheduler(ctx context.Context, pods []*v1.Pod, stateNod
 					domains[key].Insert(requirement.Values()...)
 				}
 			}
+
 		}
 
 		requirements := scheduling.NewNodeSelectorRequirements(nodePool.Spec.Template.Spec.Requirements...)
@@ -380,6 +385,8 @@ func (p *Provisioner) launchNodeClaim(ctx context.Context, n *scheduler.NodeClai
 		return nodeclaimutil.Key{}, err
 	}
 	nodeClaim := n.ToNodeClaim(latest)
+	// nodeclaim reqs while launching [{testing/cluster In [unspecified]} {karpenter.sh/nodepool In [snapjade-1-sdfuxwnvfb]} {node.kubernetes.io/instance-type In [gpu-vendor-b-instance-type]}]
+	fmt.Println("nodeclaim reqs while launching",nodeClaim.Spec.Requirements)
 	if err := p.kubeClient.Create(ctx, nodeClaim); err != nil {
 		return nodeclaimutil.Key{}, err
 	}
