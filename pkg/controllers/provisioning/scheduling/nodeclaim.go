@@ -77,19 +77,13 @@ func (n *NodeClaim) Add(pod *v1.Pod) error {
 	podRequirements := scheduling.NewPodRequirements(pod)
 
 	// Check NodeClaim Affinity Requirements
-	if err := nodeClaimRequirements.Compatible(podRequirements, lo.Ternary(n.OwnerKey.IsProvisioner, scheduling.AllowUndefinedWellKnownLabelsV1Alpha5, scheduling.AllowUndefinedWellKnownLabelsV1Beta1)); err != nil {
-		return fmt.Errorf("incompatible requirements, %w", err)
-	}
-	nodeClaimRequirements.Add(podRequirements.Values()...)
+	// if err := nodeClaimRequirements.Compatible(podRequirements, lo.Ternary(n.OwnerKey.IsProvisioner, scheduling.AllowUndefinedWellKnownLabelsV1Alpha5, scheduling.AllowUndefinedWellKnownLabelsV1Beta1)); err != nil {
+	// 	return fmt.Errorf("incompatible requirements, %w", err)
+	// }
 
-	strictPodRequirements := podRequirements
-	if scheduling.HasPreferredNodeAffinity(pod) {
-		// strictPodRequirements is important as it ensures we don't inadvertently restrict the possible pod domains by a
-		// preferred node affinity.  Only required node affinities can actually reduce pod domains.
-		strictPodRequirements = scheduling.NewStrictPodRequirements(pod)
-	}
 	// Check Topology Requirements
-	topologyRequirements, err := n.topology.AddRequirements(strictPodRequirements, nodeClaimRequirements, pod, lo.Ternary(n.OwnerKey.IsProvisioner, scheduling.AllowUndefinedWellKnownLabelsV1Alpha5, scheduling.AllowUndefinedWellKnownLabelsV1Beta1))
+	topologyRequirements, err := n.topology.AddRequirements(nodeClaimRequirements, pod, lo.Ternary(n.OwnerKey.IsProvisioner, scheduling.AllowUndefinedWellKnownLabelsV1Alpha5, scheduling.AllowUndefinedWellKnownLabelsV1Beta1))
+	nodeClaimRequirements.Add(podRequirements.Values()...)
 	if err != nil {
 		return err
 	}

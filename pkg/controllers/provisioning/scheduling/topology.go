@@ -18,10 +18,12 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/aws/karpenter-core/pkg/controllers/state"
 	"github.com/aws/karpenter-core/pkg/scheduling"
 	"github.com/aws/karpenter-core/pkg/utils/functional"
+	"github.com/samber/lo"
 
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
@@ -147,9 +149,40 @@ func (t *Topology) Record(p *v1.Pod, requirements scheduling.Requirements, compa
 // affinities, anti-affinities or inverse anti-affinities.  The nodeHostname is the hostname that we are currently considering
 // placing the pod on.  It returns these newly tightened requirements, or an error in the case of a set of requirements that
 // cannot be satisfied.
-func (t *Topology) AddRequirements(podRequirements, nodeRequirements scheduling.Requirements, p *v1.Pod, compatabilityOptions ...functional.Option[scheduling.CompatabilityOptions]) (scheduling.Requirements, error) {
+
+func podTopologyReqs(pod *v1.Pod) scheduling.Requirements {
+
+	requirements := scheduling.NewLabelRequirements(pod.Spec.NodeSelector)
+	if pod.Spec.Affinity == nil || pod.Spec.Affinity.NodeAffinity == nil {
+		return requirements
+	}
+	// The legal operators for pod affinity and anti-affinity are In, NotIn, Exists, DoesNotExist.
+	// Select heaviest preference and treat as a requirement. An outer loop will iteratively unconstrain them if unsatisfiable.
+	if preferred := pod.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution; len(preferred) > 0 {
+		sort.Slice(preferred, func(i int, j int) bool { return preferred[i].Weight > preferred[j].Weight })
+		requirements.Add(scheduling.NewNodeSelectorRequirements(preferred[0].Preference.MatchExpressions...).Values()...)
+	}
+
+	// Select first requirement. An outer loop will iteratively remove OR requirements if unsatisfiable
+	if pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil &&
+		len(pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) > 0 {
+		requirements.Add(scheduling.NewNodeSelectorRequirements(pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions...).Values()...)
+	}
+	return requirements
+}
+
+func (t *Topology) AddRequirements(nodeRequirements scheduling.Requirements, p *v1.Pod, compatabilityOptions ...functional.Option[scheduling.CompatabilityOptions]) (scheduling.Requirements, error) {
 	requirements := scheduling.NewRequirements(nodeRequirements.Values()...)
+	podRequirements := scheduling.Requirements{}
 	for _, topology := range t.getMatchingTopologies(p, nodeRequirements, compatabilityOptions...) {
+		if lo.FromPtr(topology.nodeAffinityPolicy) == v1.NodeInclusionPolicyHonor {
+			podRequirements = podTopologyReqs(p)
+			nodeRequirements.Add(podRequirements.Values()...)
+		}
+
+		fmt.Println("pod reqs is",podRequirements)
+		fmt.Println("node reqs is",nodeRequirements)
+
 		podDomains := scheduling.NewRequirement(topology.Key, v1.NodeSelectorOpExists)
 		if podRequirements.Has(topology.Key) {
 			podDomains = podRequirements.Get(topology.Key)

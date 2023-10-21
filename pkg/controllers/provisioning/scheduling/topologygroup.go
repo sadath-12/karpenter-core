@@ -211,40 +211,22 @@ func (t *TopologyGroup) filterByNodeTaintsPolicy(pod *v1.Pod) {
 func (t *TopologyGroup) nextDomainTopologySpread(pod *v1.Pod, podDomains, nodeDomains *scheduling.Requirement) *scheduling.Requirement {
 	selfSelecting := t.selects(pod)
 
-	if lo.FromPtr(t.nodeTaintsPolicy) == v1.NodeInclusionPolicyHonor {
-		t.filterByNodeTaintsPolicy(pod)
-	}
-
 	min := t.domainMinCount(podDomains)
 
 	minDomain := ""
 	minCount := int32(math.MaxInt32)
 	for domain := range t.domains {
 		// but we can only choose from the node domains
-		if lo.FromPtr(t.nodeAffinityPolicy) == v1.NodeInclusionPolicyHonor {
-
-			if nodeDomains.Has(domain) {
-				// comment from kube-scheduler regarding the viable choices to schedule to based on skew is:
-				// 'existing matching num' + 'if self-match (1 or 0)' - 'global min matching num' <= 'maxSkew'
-				count := t.domains[domain]
-				if selfSelecting {
-					count++
-				}
-				if count-min <= t.maxSkew && count < minCount {
-					minDomain = domain
-					minCount = count
-				}
+		if nodeDomains.Has(domain) {
+			// comment from kube-scheduler regarding the viable choices to schedule to based on skew is:
+			// 'existing matching num' + 'if self-match (1 or 0)' - 'global min matching num' <= 'maxSkew'
+			count := t.domains[domain]
+			if selfSelecting {
+				count++
 			}
-		} else {
-			if podDomains.Has(domain) {
-				count := t.domains[domain]
-				if selfSelecting {
-					count++
-				}
-				if count-min <= t.maxSkew && count < minCount {
-					minDomain = domain
-					minCount = count
-				}
+			if count-min <= t.maxSkew && count < minCount {
+				minDomain = domain
+				minCount = count
 			}
 		}
 	}
@@ -265,15 +247,7 @@ func (t *TopologyGroup) domainMinCount(domains *scheduling.Requirement) int32 {
 	var numPodSupportedDomains int32
 	// determine our current min count
 	for domain, count := range t.domains {
-		if *t.nodeAffinityPolicy == v1.NodeInclusionPolicyHonor {
-
-			if domains.Has(domain) {
-				numPodSupportedDomains++
-				if count < min {
-					min = count
-				}
-			}
-		} else {
+		if domains.Has(domain) {
 			numPodSupportedDomains++
 			if count < min {
 				min = count

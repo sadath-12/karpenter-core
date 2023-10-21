@@ -527,14 +527,14 @@ var _ = Describe("Topology", func() {
 			ExpectSkew(ctx, env.Client, "default", &topology[0]).To(ConsistOf(3))
 		})
 
-		It("should respect nodeAffinityPolicy constraint when it is ignore of type1", func() {
+		It("should respect nodeAffinityPolicy constraint when it is ignore ", func() {
 			nodePool.Spec.Template.Spec.Requirements = []v1.NodeSelectorRequirement{
 				{Key: v1.LabelTopologyZone, Operator: v1.NodeSelectorOpIn, Values: []string{"test-zone-1", "test-zone-2", "test-zone-3"}}}
 			topology := []v1.TopologySpreadConstraint{{
-				TopologyKey:       v1.LabelTopologyZone,
-				WhenUnsatisfiable: v1.DoNotSchedule,
-				LabelSelector:     &metav1.LabelSelector{MatchLabels: labels},
-				MaxSkew:           1,
+				TopologyKey:        v1.LabelTopologyZone,
+				WhenUnsatisfiable:  v1.DoNotSchedule,
+				LabelSelector:      &metav1.LabelSelector{MatchLabels: labels},
+				MaxSkew:            1,
 				NodeAffinityPolicy: new(v1.NodeInclusionPolicy),
 			}}
 
@@ -552,7 +552,7 @@ var _ = Describe("Topology", func() {
 			ExpectSkew(ctx, env.Client, "default", &topology[0]).To(ConsistOf(1))
 		})
 
-		FIt("should respect nodeAffinityPolicy constraints when ignore of type2", func() {
+		It("should respect nodeAffinityPolicy constraints when ignore of type2", func() {
 			nodePool.Spec.Template.Spec.Requirements = []v1.NodeSelectorRequirement{
 				{Key: v1.LabelTopologyZone, Operator: v1.NodeSelectorOpIn, Values: []string{"test-zone-1", "test-zone-2", "test-zone-3"}}}
 			topology := []v1.TopologySpreadConstraint{{
@@ -591,7 +591,7 @@ var _ = Describe("Topology", func() {
 			ExpectSkew(ctx, env.Client, "default", &topology[0]).To(ConsistOf(2, 1, 1))
 		})
 
-		FIt("should ignore node taints when nodeTaintsPolicy is set to Ignore", func() {
+		It("should ignore node taints when nodeTaintsPolicy is set to Ignore", func() {
 
 			nodePool.Spec.Template.Spec.Requirements = []v1.NodeSelectorRequirement{
 				{Key: v1.LabelTopologyZone, Operator: v1.NodeSelectorOpIn, Values: []string{"test-zone-1", "test-zone-2", "test-zone-3"}}}
