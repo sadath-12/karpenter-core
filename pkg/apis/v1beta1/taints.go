@@ -20,7 +20,19 @@ import v1 "k8s.io/api/core/v1"
 const (
 	DisruptionTaintKey             = Group + "/disruption"
 	DisruptingNoScheduleTaintValue = "disrupting"
+	TerminationTaintKey            = Group + "/termination"
+	TerminationNoExecuteTaintValue = "Termination"
 )
+
+
+var TaintFuncs = map[v1.Taint]func(taint v1.Taint) bool{
+	DisruptionNoScheduleTaint: func(taint v1.Taint) bool {
+		return IsDisruptingTaint(taint) // Call IsDisruptingTaint with the required argument
+	},
+	TerminationNoExecuteTaint: func(taint v1.Taint) bool {
+		return IsTerminatingTaint(taint) // Call IsTerminatingTaint with the required argument
+	},
+}
 
 var (
 	// DisruptionNoScheduleTaint is used by the deprovisioning controller to ensure no pods
@@ -30,8 +42,17 @@ var (
 		Effect: v1.TaintEffectNoSchedule,
 		Value:  DisruptingNoScheduleTaintValue,
 	}
+	TerminationNoExecuteTaint = v1.Taint{
+		Key:    TerminationTaintKey,
+		Effect: v1.TaintEffectNoExecute,
+		Value:  TerminationNoExecuteTaintValue,
+	}
 )
 
 func IsDisruptingTaint(taint v1.Taint) bool {
 	return taint.MatchTaint(&DisruptionNoScheduleTaint) && taint.Value == DisruptingNoScheduleTaintValue
+}
+
+func IsTerminatingTaint(taint v1.Taint) bool {
+	return taint.MatchTaint(&TerminationNoExecuteTaint) && taint.Value == TerminationNoExecuteTaintValue
 }
